@@ -10,12 +10,17 @@
 import logging
 import socket
 import threading
+import sys
 
 level = logging.DEBUG
 format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 datefmt = '%Y-%m-%d %H:%M'
 logging.basicConfig(level=level, format=format, datefmt=datefmt)
 logger = logging.getLogger(__name__)
+PY3 = False
+if sys.version > '3':
+    PY3 = True
+    import binascii
 
 
 def hex2ascii(string):
@@ -53,10 +58,13 @@ def parseDNSRQ(data):
     # 是否需要三方DNS解析标识
     need_third_dns = True
     # byte 原始数据转化成十六进制字符串
-    string_data_hex = data.encode('hex')
+    if PY3:
+        request_hex_string = binascii.hexlify(data).decode('utf-8')
+    else:
+        request_hex_string = data.encode('hex')
     # 解析出域名
-    domain, end = hex2domain(string_data_hex)
-    logger.info("[+] DNS RQ:%s =====> %s", string_data_hex, domain)
+    domain, end = hex2domain(request_hex_string)
+    logger.info("[+] DNS RQ:%s =====> %s", request_hex_string, domain)
     ip = None
     # if len(domain) > 0:
     #     ip = Search_key_ip(domain, dict_data)
@@ -78,18 +86,21 @@ def parseDNSRQ(data):
             ip = "104.224.140.135"
         logger.info("[+] 翻墙 DNS IP 映射:%s =====> %s", domain, ip)
 
-    response_data_hex = ''
+    response_hex_byte = None
     if ip:
         need_third_dns = False
         # ID标识+'81800001000100000000'+hex(域名)+00010001c00c000100010000003f0004'+hex(IP)
-        response_data_hex = string_data_hex[0:4] + '81800001000100000000' + string_data_hex[
-                                                                            24:end] + '00010001c00c000100010000003f0004'
+        response_hex_string = request_hex_string[0:4] + '81800001000100000000' + request_hex_string[
+                                                                                 24:end] + '00010001c00c000100010000003f0004'
         # 十进制表示的IP变为十六进制表示的IP
         dnsip = '{:02X}{:02X}{:02X}{:02X}'.format(*map(int, ip.split('.'))).lower()
-        # print "Revise:\t", domain
-        response_data_hex += dnsip
+        response_hex_string += dnsip
         logger.info("[+] DNS IP 映射 : %s =====> %s ", domain, str(ip))
-    return need_third_dns, response_data_hex.decode('hex')
+        if PY3:
+            response_hex_byte = binascii.unhexlify(bytes(response_hex_string, 'utf-8'))
+        else:
+            response_hex_byte = response_hex_string.decode('hex')
+    return need_third_dns, response_hex_byte
 
 
 def call_remote_dns(udp, reqData, address):
