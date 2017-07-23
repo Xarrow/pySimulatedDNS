@@ -18,9 +18,13 @@ datefmt = '%Y-%m-%d %H:%M'
 logging.basicConfig(level=level, format=format, datefmt=datefmt)
 logger = logging.getLogger(__name__)
 PY3 = False
+
 if sys.version > '3':
     PY3 = True
     import binascii
+
+# 全局本地缓存
+magic_cache = {'myip': '127.0.0.1'}
 
 
 def hex2ascii(string):
@@ -66,9 +70,13 @@ def parseDNSRQ(data):
     domain, end = hex2domain(request_hex_string)
     logger.info("[+] DNS RQ:%s =====> %s", request_hex_string, domain)
     ip = None
-    # if len(domain) > 0:
-    #     ip = Search_key_ip(domain, dict_data)
+
     if domain and len(domain) > 0:
+        # 获取主域名
+        main_domain = domain.split('.')[-3]
+        ip = magic_cache.get(main_domain)
+        if ip:
+            logger.info("%s From Cache  =====> %s", main_domain, ip)
         # 简单的做一下匹配
         if domain.__contains__('google') | \
                 domain.__contains__("youtube") | \
@@ -84,7 +92,7 @@ def parseDNSRQ(data):
                 domain.__contains__("twimg") | \
                 domain.__contains__("t.co"):
             ip = "104.224.140.135"
-        logger.info("[+] 翻墙 DNS IP 映射:%s =====> %s", domain, ip)
+            # logger.info("[+] 翻墙 DNS IP 映射:%s =====> %s", domain, ip)
 
     response_hex_byte = None
     if ip:
@@ -103,7 +111,7 @@ def parseDNSRQ(data):
     return need_third_dns, response_hex_byte
 
 
-def call_remote_dns(udp, reqData, address):
+def call_remote_dns(udp, reqData, address,remote_dns='119.29.29.29'):
     """
         udp     主udp
         reqData 请求原始数据
@@ -113,7 +121,7 @@ def call_remote_dns(udp, reqData, address):
 
     sock_remote = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     # 请求腾讯DNS
-    sock_remote.sendto(reqData, ("8.8.8.8", 53))
+    sock_remote.sendto(reqData, (remote_dns, 53))
     sock_remote.settimeout(5)
     resData = sock_remote.recv(1024)
 
