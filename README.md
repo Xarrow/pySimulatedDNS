@@ -19,5 +19,5 @@ python27.exe pySimulatedDNS.py
 
 ### 2.Linux启动方式
 ```
-python pySimulatedDNS.py
+sudo python pySimulatedDNS.py
 ```
