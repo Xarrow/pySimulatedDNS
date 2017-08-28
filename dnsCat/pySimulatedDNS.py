@@ -123,6 +123,7 @@ def call_remote_dns(udp, reqData, address,remote_dns='119.29.29.29'):
     # 请求腾讯DNS
     sock_remote.sendto(reqData, (remote_dns, 53))
     sock_remote.settimeout(5)
+    # sock_remote.setblocking(0)
     resData = sock_remote.recv(1024)
 
     udp.sendto(resData, address)
