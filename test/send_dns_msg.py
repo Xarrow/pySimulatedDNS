@@ -11,7 +11,6 @@ import logging
 import socket
 import threading
 import select
-from concurrent.futures import ThreadPoolExecutor
 
 
 level = logging.DEBUG
