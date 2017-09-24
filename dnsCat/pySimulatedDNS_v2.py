@@ -80,17 +80,16 @@ def parse_rq_rs_data(req_data, res_data):
     domain, end = hex2domain(req_hex_string)
     long_hex_ip = res_hex_string[-8:]
     addr_long = int(long_hex_ip, 16)
-    # hex param to ip format
     ip_str = socket.inet_ntoa(struct.pack("<L", addr_long))
 
-    # if domain.__contains__('google') | \
-    #         domain.__contains__("youtube") | \
-    #         domain.__contains__("ytimg") | \
-    #         domain.__contains__("gstatic") | \
-    #         domain.__contains__("ggpht"):
-    #     sniproxy IP
-    #     219.76.4.70
-    #     ip_str = "61.91.161.217"
+    if domain.__contains__('google') | \
+            domain.__contains__("youtube") | \
+            domain.__contains__("ytimg") | \
+            domain.__contains__("gstatic") | \
+            domain.__contains__("ggpht"):
+        # sniproxy IP
+        # 219.76.4.70
+        ip_str = "61.91.161.217"
     logger.info("%s ==> %s", domain, ip_str)
     CACHE[domain] = ip_str
     pass
@@ -138,7 +137,6 @@ def packingMsg(req_data, end, cache_ip):
 
 
 def switch(local_udp, req_data, address):
-    # switch dns request
     domain, end = hex2domain(binascii.hexlify(req_data).decode('utf-8'))
     cache_ip = CACHE.get(domain)
     if cache_ip:
@@ -148,19 +146,22 @@ def switch(local_udp, req_data, address):
     else:
         # request third dns server
         logger.info("[SWITCH2DNS] ==> %s", domain, )
-        # domain from China
-        if domain.endswith('.net.') or domain.endswith('.cn.'):
-            res_data = send_third_dns(req_data=req_data, remote_dns='119.29.29.29')
-        else:
-            res_data = send_third_dns(req_data=req_data)
-    local_udp.sendto(res_data,address)
+        res_data = send_third_dns(req_data=req_data)
+    if domain.endswith('.net.') or domain.endswith('.cn.'):
+        res_data = send_third_dns(req_data=req_data, remote_dns='8.8.8.8')
+    else:
+        res_data = send_third_dns(req_data=req_data)
+    r, w, e = select.select([], [local_udp], [], 5)
+    if len(w) != 0:
+        local_udp.sendto(res_data, address)
+    # local_udp.sendto(req_data,address)
     pass
 
 
 if __name__ == '__main__':
     pool = ThreadPoolExecutor(11)
     local_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    local_udp.bind(("", 5354))
+    local_udp.bind(("0.0.0.0", 53))
     while True:
         try:
             req_data, address = local_udp.recvfrom(BUFFER_SIZE)
