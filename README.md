@@ -5,7 +5,7 @@
 
 
 使用Python模拟简单的DNS报文,目前支持Python2,Python3.X,
-详细请访问[Python模拟DNS报文解析](http://iliangqunru.com/post/2017/pythonmo-ni-dnsbao-wen-jie-xi)
+详细请访问[Python模拟DNS报文解析](https://iliangqunru.bitcron.com/post/2017/pythonmo-ni-dnsbao-wen-jie-xi)
 
 ### 1.Windows启动方式
 ```
